@@ -19,7 +19,7 @@ For the purpose of this exercise, they've defined a phone number as an `int`. Th
 Did the application display the account information and the gain of $40.05 of interest on 10/10/2013?`
 ```
 
-This is not asked for, as such, in the instructions. See 3.2. It just says to display the amount of interest per month: `For example: for an account of type savings with a deposit date of 10/10/2002 and an amount of $1023.20 the system will show "You will get $5.97 as interest on day 10 of every month".` To cover these audit questions, I've also chosen to display examples of three years into the future.
+This is not asked for, as such, in the instructions. See 3.2. It just says to display the amount of interest per month: `For example: for an account of type savings with a deposit date of 10/10/2002 and an amount of $1023.20 the system will show "You will get $5.97 as interest on day 10 of every month".` To lazily cover these audit questions, I've also chosen to display examples three years into the future.
 
 ```
 Create another user named "Michel".
