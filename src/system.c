@@ -281,14 +281,14 @@ checkAgain:
     double yearly = rate * amount;
     double monthly = rate * amount / 12;
 
-    double compound = years * yearly;
-    compound += months * monthly;
+    double interest = years * yearly;
+    interest += months * monthly;
     if (days < 0)
     {
-        compound -= monthly;
+        interest -= monthly;
     }
 
-    printf("\nBy %d/%d/%d will have gained $%.2lf in interest.\n", dateTo.month, dateTo.day, dateTo.year, compound);
+    printf("\nBy %d/%d/%d will have gained $%.2lf in interest.\n", dateTo.month, dateTo.day, dateTo.year, interest);
     return;
 }
 
