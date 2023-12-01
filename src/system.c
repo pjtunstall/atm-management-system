@@ -4,7 +4,7 @@ const char *RECORDS = "./data/records.txt";
 
 int getAccountFromFile(FILE *ptr, char name[100], struct Record *r)
 {
-    return fscanf(ptr, "%d %d %s %d %d/%d/%d %s %d %lf %s",
+    return fscanf(ptr, "%d %d %s %d %d/%d/%d %s %d %lf %s %d/%d/%d %lf\n\n",
                   &r->id,
                   &r->userId,
                   name,
@@ -15,12 +15,16 @@ int getAccountFromFile(FILE *ptr, char name[100], struct Record *r)
                   r->country,
                   &r->phone,
                   &r->amount,
-                  r->accountType) != EOF;
+                  r->accountType,
+                  &r->lastChanged.month,
+                  &r->lastChanged.day,
+                  &r->lastChanged.year,
+                  &r->interest) != EOF;
 }
 
 void saveAccountToFile(FILE *ptr, struct User u, struct Record r)
 {
-    fprintf(ptr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n",
+    fprintf(ptr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s %d/%d/%d %lf\n\n",
             r.id,
             u.id,
             u.name,
@@ -31,7 +35,71 @@ void saveAccountToFile(FILE *ptr, struct User u, struct Record r)
             r.country,
             r.phone,
             r.amount,
-            r.accountType);
+            r.accountType,
+            r.lastChanged.month,
+            r.lastChanged.day,
+            r.lastChanged.year,
+            r.interest);
+}
+
+struct Date getToday()
+{
+    struct Date today;
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    today.day = tm.tm_mday;
+    today.month = tm.tm_mon + 1;
+    today.year = tm.tm_year + 1900;
+    return today;
+}
+
+double getInterestIncrement(struct Record r, struct Date dateTo)
+{
+    double rate = 0;
+    double increment = 0;
+
+    if (strcmp(r.accountType, "current") == 0)
+    {
+        return 0;
+    }
+
+    if (strcmp(r.accountType, "saving") == 0)
+    {
+        rate = 0.07;
+    }
+    else if (strcmp(r.accountType, "fixed01") == 0)
+    {
+        rate = 0.04;
+    }
+    else if (strcmp(r.accountType, "fixed02") == 0)
+    {
+        rate = 0.05;
+    }
+    else if (strcmp(r.accountType, "fixed03") == 0)
+    {
+        rate = 0.08;
+    }
+
+    int years = dateTo.year - r.lastChanged.year;
+    int months = dateTo.month - r.lastChanged.month;
+    int days = dateTo.day - r.lastChanged.day;
+
+    if (years < 0 || (years == 0 && months < 0) || (years == 0 && months == 0 && days < 0))
+    {
+        return -1;
+    }
+
+    double yearly = rate * r.amount;
+    double monthly = rate * r.amount / 12;
+
+    increment += years * yearly;
+    increment += months * monthly;
+    if (days < 0)
+    {
+        increment -= monthly;
+    }
+
+    return increment;
 }
 
 void stayOrReturn(int notGood, void f(struct User u), struct User u)
@@ -152,7 +220,7 @@ getAccountNumber:
 
     rewind(pf);
 
-    while (fscanf(pf, "%d %d %s %d %d/%d/%d %s %d %lf %s\n\n",
+    while (fscanf(pf, "%d %d %s %d %d/%d/%d %s %d %lf %s %d/%d/%d %lf\n\n",
                   &cr.id,
                   &cr.userId,
                   cr.name,
@@ -163,7 +231,11 @@ getAccountNumber:
                   cr.country,
                   &cr.phone,
                   &cr.amount,
-                  cr.accountType) != EOF)
+                  cr.accountType,
+                  &cr.lastChanged.month,
+                  &cr.lastChanged.day,
+                  &cr.lastChanged.year,
+                  &cr.interest) != EOF)
     {
         i++;
         if (strcmp(cr.name, u.name) == 0 && cr.accountNbr == r.accountNbr)
@@ -247,6 +319,8 @@ chooseAccountType:
     }
 
     r.id = i;
+    r.lastChanged = r.deposit;
+
     saveAccountToFile(pf, u, r);
 
     fclose(pf);
@@ -254,8 +328,14 @@ chooseAccountType:
     success(u);
 }
 
-void checkInterest(struct Date dateFrom, double rate, double amount)
+void checkInterest(struct Record r)
 {
+    if (strcmp(r.accountType, "current") == 0)
+    {
+        printf("This bank doesn't offer interest on current accounts.\n");
+        return;
+    }
+
     struct Date dateTo;
 
 checkAgain:
@@ -268,27 +348,36 @@ checkAgain:
         goto checkAgain;
     }
 
-    int years = dateTo.year - dateFrom.year;
-    int months = dateTo.month - dateFrom.month;
-    int days = dateTo.day - dateFrom.day;
+    // int years = dateTo.year - dateFrom.year;
+    // int months = dateTo.month - dateFrom.month;
+    // int days = dateTo.day - dateFrom.day;
 
-    if (years < 0 || (years == 0 && months < 0) || (years == 0 && months == 0 && days < 0))
+    // if (years < 0 || (years == 0 && months < 0) || (years == 0 && months == 0 && days < 0))
+    // {
+    //     printf("✖ Invalid date range!\n");
+    //     goto checkAgain;
+    // }
+
+    // double yearly = rate * amount;
+    // double monthly = rate * amount / 12;
+
+    // double interest = years * yearly;
+    // interest += months * monthly;
+    // if (days < 0)
+    // {
+    //     interest -= monthly;
+    // }
+
+    double increment = getInterestIncrement(r, dateTo);
+    if (increment == -1)
     {
-        printf("✖ Invalid date range!\n");
+        printf("\n✖ Invalid date range!\n");
         goto checkAgain;
     }
 
-    double yearly = rate * amount;
-    double monthly = rate * amount / 12;
+    double interest = r.interest + getInterestIncrement(r, dateTo);
 
-    double interest = years * yearly;
-    interest += months * monthly;
-    if (days < 0)
-    {
-        interest -= monthly;
-    }
-
-    printf("\nBy %d/%d/%d will have gained $%.2lf in interest.\n", dateTo.month, dateTo.day, dateTo.year, interest);
+    printf("\nBy %d/%d/%d, you will have gained $%.2lf in interest.\n", dateTo.month, dateTo.day, dateTo.year, interest);
     return;
 }
 
@@ -306,6 +395,7 @@ void checkAccount(struct User u)
     printf("\t\t====== Check Accounts =====\n\n");
     printf("\nEnter account number: ");
     scanf("%d", &accountNbr);
+    struct Date today = getToday();
 
     while (getAccountFromFile(pf, userName, &r))
     {
@@ -313,18 +403,21 @@ void checkAccount(struct User u)
         {
             found = 1;
             printf("_____________________\n");
-            printf("\nAccount number: %d\nDeposit Date: %d/%d/%d \ncountry: %s \nPhone number: %d \nAmount deposited: $%.2f \nType Of Account: %s\n",
+            printf("\nAccount number: %d\nCreated: %d/%d/%d \nCountry: %s \nPhone number: %d \nBalance on %d/%d/%d: $%.2f \nType Of Account: %s\n",
                    r.accountNbr,
                    r.deposit.month,
                    r.deposit.day,
                    r.deposit.year,
                    r.country,
                    r.phone,
-                   r.amount,
+                   today.month,
+                   today.day,
+                   today.year,
+                   r.amount + r.interest + getInterestIncrement(r, getToday()),
                    r.accountType);
             if (strcmp(r.accountType, "current") == 0)
             {
-                printf("You will not get interests [sic] because the account is of type current.\n");
+                printf("You will not get interest because the account is of type current.\n");
             }
             else
             {
@@ -353,7 +446,7 @@ void checkAccount(struct User u)
                 scanf(" %c", &answer);
                 if (answer == 'y' || answer == 'Y')
                 {
-                    checkInterest(r.deposit, rate, r.amount);
+                    checkInterest(r);
                 }
                 else if (answer != 'n' && answer != 'N')
                 {
@@ -377,6 +470,7 @@ void checkAllAccounts(struct User u)
     char userName[100];
     struct Record r;
     int found = 0;
+    struct Date today = getToday();
 
     FILE *pf = fopen(RECORDS, "r");
 
@@ -388,14 +482,17 @@ void checkAllAccounts(struct User u)
         {
             found = 1;
             printf("_____________________\n");
-            printf("\nAccount number: %d\nDeposit Date: %d/%d/%d \ncountry: %s \nPhone number: %d \nAmount deposited: $%.2f \nType Of Account: %s\n",
+            printf("\nAccount number: %d\nCreated: %d/%d/%d \nCountry: %s \nPhone number: %d \nBalance on %d/%d/%d: $%.2f \nType Of Account: %s\n",
                    r.accountNbr,
                    r.deposit.month,
                    r.deposit.day,
                    r.deposit.year,
                    r.country,
                    r.phone,
-                   r.amount,
+                   today.month,
+                   today.day,
+                   today.year,
+                   r.amount + r.interest + getInterestIncrement(r, getToday()),
                    r.accountType);
         }
     }
@@ -432,7 +529,7 @@ getAccountNumber:
         goto getAccountNumber;
     }
 
-    while (fscanf(pf, "%d %d %s %d %d/%d/%d %s %d %lf %s\n\n",
+    while (fscanf(pf, "%d %d %s %d %d/%d/%d %s %d %lf %s %d/%d/%d %lf\n\n",
                   &records[numRecords].id,
                   &records[numRecords].userId,
                   records[numRecords].name,
@@ -443,7 +540,11 @@ getAccountNumber:
                   records[numRecords].country,
                   &records[numRecords].phone,
                   &records[numRecords].amount,
-                  records[numRecords].accountType) != EOF)
+                  records[numRecords].accountType,
+                  &records[numRecords].lastChanged.month,
+                  &records[numRecords].lastChanged.day,
+                  &records[numRecords].lastChanged.year,
+                  &records[numRecords].interest) != EOF)
     {
         if (strcmp(records[numRecords].name, u.name) == 0 && records[numRecords].accountNbr == accountNbr)
         {
@@ -465,7 +566,6 @@ getAccountNumber:
         if (scanf("%d", &option) != 1)
         {
             printf("\n✖ Invalid operation!\n");
-            // Clear the input buffer
             while (getchar() != '\n')
                 ;
             goto fixed;
@@ -492,11 +592,10 @@ getAccountNumber:
     }
 
 invalid:
-    printf("\n\nEnter 1 to deposit, 2 to withdraw, or 3 for main menu: ");
+    printf("\nEnter 1 to deposit, 2 to withdraw, or 3 for main menu: ");
     if (scanf("%d", &option) != 1)
     {
         printf("\n✖ Invalid operation!\n");
-        // Clear the input buffer
         while (getchar() != '\n')
             ;
         goto invalid;
@@ -504,10 +603,13 @@ invalid:
     if (option == 1)
     {
         printf("\nEnter amount to deposit: $");
+        struct Date today = getToday();
+        records[accountToAmend].lastChanged = today;
+        records[accountToAmend].interest += getInterestIncrement(records[accountToAmend], today);
         scanf("%lf", &amount);
         records[accountToAmend].amount += amount;
-        printf("\n✔ Deposited successfully!");
-        printf("\nYour new balance is: $%.2lf\n", records[accountToAmend].amount);
+        printf("\n✔ Deposited successfully!\n");
+        printf("Your new balance is: $%.2lf\n\n", records[accountToAmend].amount + records[accountToAmend].interest);
     }
     else if (option == 2)
     {
@@ -515,13 +617,16 @@ invalid:
         scanf("%lf", &amount);
         if (amount > records[accountToAmend].amount)
         {
-            printf("\nInsufficient balance!");
+            printf("\nInsufficient balance!\n");
         }
         else
         {
+            struct Date today = getToday();
+            records[accountToAmend].lastChanged = today;
+            records[accountToAmend].interest += getInterestIncrement(records[accountToAmend], today);
             records[accountToAmend].amount -= amount;
-            printf("\n✔ Withdrawn successfully!");
-            printf("\nYour new balance is: $%.2lf\n", records[accountToAmend].amount);
+            printf("\n✔ Withdrawn successfully!\n");
+            printf("Your new balance is: $%.2lf\n\n", records[accountToAmend].amount + records[accountToAmend].interest);
         }
     }
     else if (option == 3)
@@ -544,7 +649,7 @@ invalid:
 
     for (int i = 0; i < numRecords; i++)
     {
-        fprintf(tempPtr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n",
+        fprintf(tempPtr, "%d %d %s %d %d/%d/%d %s %d %lf %s %d/%d/%d %lf\n\n",
                 records[i].id,
                 records[i].userId,
                 records[i].name,
@@ -555,7 +660,11 @@ invalid:
                 records[i].country,
                 records[i].phone,
                 records[i].amount,
-                records[i].accountType);
+                records[i].accountType,
+                records[i].lastChanged.month,
+                records[i].lastChanged.day,
+                records[i].lastChanged.year,
+                records[i].interest);
     }
 
     fclose(tempPtr);
@@ -595,7 +704,7 @@ getAccNbr:
         return;
     }
 
-    while (fscanf(ptr, "%d %d %s %d %d/%d/%d %s %d %lf %s\n\n",
+    while (fscanf(ptr, "%d %d %s %d %d/%d/%d %s %d %lf %s %d/%d/%d %lf\n\n",
                   &records[numRecords].id,
                   &records[numRecords].userId,
                   records[numRecords].name,
@@ -606,7 +715,11 @@ getAccNbr:
                   records[numRecords].country,
                   &records[numRecords].phone,
                   &records[numRecords].amount,
-                  records[numRecords].accountType) != EOF)
+                  records[numRecords].accountType,
+                  &records[numRecords].lastChanged.month,
+                  &records[numRecords].lastChanged.day,
+                  &records[numRecords].lastChanged.year,
+                  &records[numRecords].interest) != EOF)
     {
         if (strcmp(records[numRecords].name, u.name) == 0 && records[numRecords].accountNbr == accountNbr)
         {
@@ -615,14 +728,14 @@ getAccNbr:
             recordToDelete = numRecords;
             printf("\nYou have asked to delete the following account:\n\n");
             printf("_____________________\n");
-            printf("\nAccount number: %d\nDeposit Date: %d/%d/%d \ncountry: %s \nPhone number: %d \nAmount deposited: $%.2f \nType Of Account: %s\n",
+            printf("\nAccount number: %d\nDeposit Date: %d/%d/%d \ncountry: %s \nPhone number: %d \nBalance: $%.2f \nType Of Account: %s\n",
                    r.accountNbr,
                    r.deposit.month,
                    r.deposit.day,
                    r.deposit.year,
                    r.country,
                    r.phone,
-                   r.amount,
+                   r.amount + r.interest + getInterestIncrement(r, getToday()),
                    r.accountType);
         }
         else
@@ -661,7 +774,7 @@ getAccNbr:
     {
         if (strcmp(r.name, u.name) != 0 || r.accountNbr != accountNbr)
         {
-            fprintf(tempPtr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n",
+            fprintf(tempPtr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s %d/%d/%d %lf\n\n",
                     records[i].id,
                     records[i].userId,
                     records[i].name,
@@ -672,7 +785,11 @@ getAccNbr:
                     records[i].country,
                     records[i].phone,
                     records[i].amount,
-                    records[i].accountType);
+                    records[i].accountType,
+                    records[i].lastChanged.month,
+                    records[i].lastChanged.day,
+                    records[i].lastChanged.year,
+                    records[i].interest);
         }
     }
 
@@ -704,7 +821,7 @@ void update(struct User u)
         return;
     }
 
-    while (fscanf(pf, "%d %d %s %d %d/%d/%d %s %d %lf %s\n\n",
+    while (fscanf(pf, "%d %d %s %d %d/%d/%d %s %d %lf %s %d/%d/%d %lf\n\n",
                   &records[numRecords].id,
                   &records[numRecords].userId,
                   records[numRecords].name,
@@ -715,7 +832,11 @@ void update(struct User u)
                   records[numRecords].country,
                   &records[numRecords].phone,
                   &records[numRecords].amount,
-                  records[numRecords].accountType) != EOF)
+                  records[numRecords].accountType,
+                  &records[numRecords].lastChanged.month,
+                  &records[numRecords].lastChanged.day,
+                  &records[numRecords].lastChanged.year,
+                  &records[numRecords].interest) != EOF)
     {
         if (strcmp(records[numRecords].name, u.name) == 0 && records[numRecords].accountNbr == accountNbr)
         {
@@ -740,7 +861,7 @@ void update(struct User u)
            r.deposit.year,
            r.country,
            r.phone,
-           r.amount,
+           r.amount + r.interest + getInterestIncrement(r, getToday()),
            r.accountType);
 
     int option;
@@ -790,7 +911,7 @@ updateOption:
     {
         if (i == accountToUpdate)
         {
-            fprintf(tempPtr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n",
+            fprintf(tempPtr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s %d/%d/%d %lf\n\n",
                     r.id,
                     r.userId,
                     r.name,
@@ -801,11 +922,15 @@ updateOption:
                     r.country,
                     r.phone,
                     r.amount,
-                    r.accountType);
+                    r.accountType,
+                    r.lastChanged.month,
+                    r.lastChanged.day,
+                    r.lastChanged.year,
+                    r.interest);
         }
         else
         {
-            fprintf(tempPtr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n",
+            fprintf(tempPtr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s %d/%d/%d %lf\n\n",
                     records[i].id,
                     records[i].userId,
                     records[i].name,
@@ -816,7 +941,11 @@ updateOption:
                     records[i].country,
                     records[i].phone,
                     records[i].amount,
-                    records[i].accountType);
+                    records[i].accountType,
+                    records[i].lastChanged.month,
+                    records[i].lastChanged.day,
+                    records[i].lastChanged.year,
+                    records[i].interest);
         }
     }
 
@@ -861,7 +990,7 @@ chooseAccount:
         return;
     }
 
-    while (fscanf(pf, "%d %d %s %d %d/%d/%d %s %d %lf %s\n\n",
+    while (fscanf(pf, "%d %d %s %d %d/%d/%d %s %d %lf %s %d/%d/%d %lf\n\n",
                   &records[numRecords].id,
                   &records[numRecords].userId,
                   records[numRecords].name,
@@ -872,7 +1001,11 @@ chooseAccount:
                   records[numRecords].country,
                   &records[numRecords].phone,
                   &records[numRecords].amount,
-                  records[numRecords].accountType) != EOF)
+                  records[numRecords].accountType,
+                  &records[numRecords].lastChanged.month,
+                  &records[numRecords].lastChanged.day,
+                  &records[numRecords].lastChanged.year,
+                  &records[numRecords].interest) != EOF)
     {
         if (strcmp(records[numRecords].name, u.name) == 0 && records[numRecords].accountNbr == accountNbr)
         {
@@ -962,7 +1095,7 @@ chooseAccount:
     {
         if (i == accountToTransfer)
         {
-            fprintf(tempPtr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n",
+            fprintf(tempPtr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s %d/%d/%d %lf\n\n",
                     r.id,
                     r.userId,
                     userName,
@@ -973,11 +1106,15 @@ chooseAccount:
                     r.country,
                     r.phone,
                     r.amount,
-                    r.accountType);
+                    r.accountType,
+                    r.lastChanged.month,
+                    r.lastChanged.day,
+                    r.lastChanged.year,
+                    r.interest);
         }
         else
         {
-            fprintf(tempPtr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n",
+            fprintf(tempPtr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s %d/%d/%d %lf\n\n",
                     records[i].id,
                     records[i].userId,
                     records[i].name,
@@ -988,7 +1125,11 @@ chooseAccount:
                     records[i].country,
                     records[i].phone,
                     records[i].amount,
-                    records[i].accountType);
+                    records[i].accountType,
+                    records[i].lastChanged.month,
+                    records[i].lastChanged.day,
+                    records[i].lastChanged.year,
+                    records[i].interest);
         }
     }
 

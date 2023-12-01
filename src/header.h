@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 struct Date
 {
@@ -19,7 +20,8 @@ struct Record
     int accountNbr;
     double amount;
     struct Date deposit;
-    struct Date withdraw;
+    struct Date lastChanged;
+    double interest;
 };
 
 struct User
