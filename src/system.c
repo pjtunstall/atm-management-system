@@ -39,14 +39,13 @@ void stayOrReturn(int notGood, void f(struct User u), struct User u)
     int option;
     if (notGood == 0)
     {
-        system("clear");
-        printf("\n✖ Record not found!\n");
+        printf("\n\n✖ Record not found!\n");
     invalid:
         printf("\nEnter 1 to try again, 2 to return to main menu, or 3 to exit.\n");
         if (scanf("%d", &option) != 1)
         {
             printf("\n✖ Pick a number that you see;\n");
-            printf("the options: 1, 2, 3.\n");
+            printf("the only options: 1, 2, 3.\n");
             // Clear the input buffer
             while (getchar() != '\n')
                 ;
@@ -57,7 +56,10 @@ void stayOrReturn(int notGood, void f(struct User u), struct User u)
         else if (option == 2)
             mainMenu(u);
         else if (option == 3)
+        {
+            printf("\n");
             exit(0);
+        }
         else
         {
             printf("✖ Insert a valid operation, dammit!\n");
@@ -78,13 +80,12 @@ void stayOrReturn(int notGood, void f(struct User u), struct User u)
     }
     if (option == 1)
     {
-        system("clear");
         mainMenu(u);
     }
     else
     {
-        system("clear");
-        exit(1);
+        printf("\n");
+        exit(0);
     }
 }
 
@@ -100,14 +101,14 @@ invalid:
             ;
         goto invalid;
     }
-    system("clear");
     if (option == 1)
     {
         mainMenu(u);
     }
     else if (option == 0)
     {
-        exit(1);
+        printf("\n");
+        exit(0);
     }
     else
     {
@@ -127,7 +128,7 @@ void createNewAcc(struct User u)
 
 noAccount:
     system("clear");
-    printf("\t\t\t===== New record =====\n");
+    printf("\t\t\t===== New Record =====\n");
 
 getDate:
     printf("\nEnter today's date(mm/dd/yyyy): ");
@@ -182,7 +183,10 @@ getAccountNumber:
             else if (option == 2)
                 mainMenu(u);
             else if (option == 3)
+            {
+                printf("\n");
                 exit(0);
+            }
             else
             {
                 printf("✖ Insert a valid operation, dammit!\n");
@@ -250,6 +254,44 @@ chooseAccountType:
     success(u);
 }
 
+void checkInterest(struct Date dateFrom, double rate, double amount)
+{
+    struct Date dateTo;
+
+checkAgain:
+    printf("\nEnter the date you want to check the interest for(mm/dd/yyyy): ");
+    if (fscanf(stdin, "%d/%d/%d", &dateTo.month, &dateTo.day, &dateTo.year) != 3)
+    {
+        printf("✖ Invalid date!\n");
+        while (getchar() != '\n')
+            ;
+        goto checkAgain;
+    }
+
+    int years = dateTo.year - dateFrom.year;
+    int months = dateTo.month - dateFrom.month;
+    int days = dateTo.day - dateFrom.day;
+
+    if (years < 0 || (years == 0 && months < 0) || (years == 0 && months == 0 && days < 0))
+    {
+        printf("✖ Invalid date range!\n");
+        goto checkAgain;
+    }
+
+    double yearly = rate * amount;
+    double monthly = rate * amount / 12;
+
+    double compound = years * yearly;
+    compound += months * monthly;
+    if (days < 0)
+    {
+        compound -= monthly;
+    }
+
+    printf("\nBy %d/%d/%d will have gained $%.2lf in interest.\n", dateTo.month, dateTo.day, dateTo.year, compound);
+    return;
+}
+
 void checkAccount(struct User u)
 {
     char userName[100];
@@ -261,7 +303,7 @@ void checkAccount(struct User u)
     FILE *pf = fopen(RECORDS, "r");
 
     system("clear");
-    printf("\t\t====== Check accounts =====\n\n");
+    printf("\t\t====== Check Accounts =====\n\n");
     printf("\nEnter account number: ");
     scanf("%d", &accountNbr);
 
@@ -306,13 +348,19 @@ void checkAccount(struct User u)
                 printf("\nYou will get $%.2lf as interest on day %d of every month.\n",
                        (r.amount * rate / 12),
                        r.deposit.day);
-                printf("In one year, you will have gained $%.2lf in interest.\n",
-                       (r.amount * rate));
-                printf("In two years, you will have gained $%.2lf in interest.\n",
-                       (r.amount * rate * 2));
-                printf("In three years, you will have gained $%.2lf in interest.\n",
-                       (r.amount * rate * 3));
-                printf("You get the idea ...\n\n");
+                printf("\nDo you want to check how much interest you will have gained at a specific date? (y/n): ");
+                char answer;
+                scanf(" %c", &answer);
+                if (answer == 'y' || answer == 'Y')
+                {
+                    checkInterest(r.deposit, rate, r.amount);
+                }
+                else if (answer != 'n' && answer != 'N')
+                {
+                    printf("\n✖ Invalid answer!\n");
+                }
+                while (getchar() != '\n')
+                    ;
             }
         }
     }
@@ -333,7 +381,7 @@ void checkAllAccounts(struct User u)
     FILE *pf = fopen(RECORDS, "r");
 
     system("clear");
-    printf("\t\t====== All accounts from user, %s =====\n\n", u.name);
+    printf("\t\t====== All Your Accounts, %s =====\n\n", u.name);
     while (getAccountFromFile(pf, userName, &r))
     {
         if (strcmp(userName, u.name) == 0)
@@ -373,7 +421,7 @@ void makeTransaction(struct User u)
     FILE *pf = fopen(RECORDS, "r");
 
     system("clear");
-    printf("\t\t====== Make a transaction =====\n\n");
+    printf("\t\t====== Make a Transaction =====\n\n");
 getAccountNumber:
     printf("\nEnter account number: ");
     if (scanf("%d", &accountNbr) != 1)
@@ -427,7 +475,10 @@ getAccountNumber:
         else if (option == 2)
             mainMenu(u);
         else if (option == 3)
+        {
+            printf("\n");
             exit(0);
+        }
         else
         {
             printf("Insert a valid operation, dammit!\n");
@@ -858,7 +909,10 @@ chooseAccount:
         else if (option == 2)
             mainMenu(u);
         else if (option == 3)
+        {
+            printf("\n");
             exit(0);
+        }
         else
         {
             printf("Dude, insert a valid operation!\n");

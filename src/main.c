@@ -51,7 +51,8 @@ haveAnotherGo:
         transfer(u);
         break;
     case 8:
-        exit(1);
+        printf("\n");
+        exit(0);
         break;
     default:
         printf("✖ Insert a valid operation, dammit!\n");
@@ -89,12 +90,12 @@ void initMenu(struct User *u)
             *u = checkCredentials(username, password);
             if (u->id == -1)
             {
-                printf("\n✖ Insert a valid operation, dammit!\n");
-                exit(1);
+                printf("\n\n✖ Wrong username or password! Scram, imposter! The police have been notified.\n\n");
+                exit(0);
             }
             else
             {
-                printf("\n\nPassword Match!");
+                printf("\n\n✔ Password Match!");
             }
             r = 1;
             break;
@@ -103,7 +104,8 @@ void initMenu(struct User *u)
             r = 1;
             break;
         case 3:
-            exit(1);
+            printf("\n");
+            exit(0);
             break;
         default:
             printf("✖ Insert a valid operation, dammit!\n");
