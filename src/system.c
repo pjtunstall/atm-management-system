@@ -339,7 +339,7 @@ void checkInterest(struct Record r)
     struct Date dateTo;
 
 checkAgain:
-    printf("\nEnter the date you want to check the interest for(mm/dd/yyyy): ");
+    printf("\nEnter the date you want to check the interest for (mm/dd/yyyy): ");
     if (fscanf(stdin, "%d/%d/%d", &dateTo.month, &dateTo.day, &dateTo.year) != 3)
     {
         printf("✖ Invalid date!\n");
@@ -348,36 +348,16 @@ checkAgain:
         goto checkAgain;
     }
 
-    // int years = dateTo.year - dateFrom.year;
-    // int months = dateTo.month - dateFrom.month;
-    // int days = dateTo.day - dateFrom.day;
-
-    // if (years < 0 || (years == 0 && months < 0) || (years == 0 && months == 0 && days < 0))
-    // {
-    //     printf("✖ Invalid date range!\n");
-    //     goto checkAgain;
-    // }
-
-    // double yearly = rate * amount;
-    // double monthly = rate * amount / 12;
-
-    // double interest = years * yearly;
-    // interest += months * monthly;
-    // if (days < 0)
-    // {
-    //     interest -= monthly;
-    // }
-
     double increment = getInterestIncrement(r, dateTo);
     if (increment == -1)
     {
-        printf("\n✖ Invalid date range!\n");
+        printf("\n✖ Invalid date range: Choose a date after the most recent change!\n");
         goto checkAgain;
     }
 
     double interest = r.interest + getInterestIncrement(r, dateTo);
 
-    printf("\nBy %d/%d/%d, you will have gained $%.2lf in interest.\n", dateTo.month, dateTo.day, dateTo.year, interest);
+    printf("\n$%.2lf interest gained on this account by %d/%d/%d.\n\n", interest, dateTo.month, dateTo.day, dateTo.year);
     return;
 }
 
@@ -403,7 +383,7 @@ void checkAccount(struct User u)
         {
             found = 1;
             printf("_____________________\n");
-            printf("\nAccount number: %d\nCreated: %d/%d/%d \nCountry: %s \nPhone number: %d \nBalance on %d/%d/%d: $%.2f \nType Of Account: %s\n",
+            printf("\nAccount number: %d\nCreated: %d/%d/%d \nCountry: %s \nPhone number: %d \nBalance on %d/%d/%d: $%.2lf \nType Of Account: %s\n",
                    r.accountNbr,
                    r.deposit.month,
                    r.deposit.day,
@@ -417,7 +397,7 @@ void checkAccount(struct User u)
                    r.accountType);
             if (strcmp(r.accountType, "current") == 0)
             {
-                printf("You will not get interest because the account is of type current.\n");
+                printf("No interest because this is a current account.\n");
             }
             else
             {
@@ -475,14 +455,14 @@ void checkAllAccounts(struct User u)
     FILE *pf = fopen(RECORDS, "r");
 
     system("clear");
-    printf("\t\t====== All Your Accounts, %s =====\n\n", u.name);
+    printf("\t\t====== All %s's Accounts =====\n\n", u.name);
     while (getAccountFromFile(pf, userName, &r))
     {
         if (strcmp(userName, u.name) == 0)
         {
             found = 1;
             printf("_____________________\n");
-            printf("\nAccount number: %d\nCreated: %d/%d/%d \nCountry: %s \nPhone number: %d \nBalance on %d/%d/%d: $%.2f \nType Of Account: %s\n",
+            printf("\nAccount number: %d\nCreated: %d/%d/%d \nCountry: %s \nPhone number: %d \nBalance on %d/%d/%d: $%.2lf \nType Of Account: %s\n",
                    r.accountNbr,
                    r.deposit.month,
                    r.deposit.day,
@@ -501,6 +481,7 @@ void checkAllAccounts(struct User u)
     {
         printf("\n✖ You have no accounts! Why not mosey on down to the main menu and make one?\n");
     }
+    printf("\n");
     success(u);
 }
 
@@ -604,10 +585,10 @@ invalid:
     {
         printf("\nEnter amount to deposit: $");
         struct Date today = getToday();
-        records[accountToAmend].lastChanged = today;
         records[accountToAmend].interest += getInterestIncrement(records[accountToAmend], today);
         scanf("%lf", &amount);
         records[accountToAmend].amount += amount;
+        records[accountToAmend].lastChanged = today;
         printf("\n✔ Deposited successfully!\n");
         printf("Your new balance is: $%.2lf\n\n", records[accountToAmend].amount + records[accountToAmend].interest);
     }
@@ -622,9 +603,9 @@ invalid:
         else
         {
             struct Date today = getToday();
-            records[accountToAmend].lastChanged = today;
             records[accountToAmend].interest += getInterestIncrement(records[accountToAmend], today);
             records[accountToAmend].amount -= amount;
+            records[accountToAmend].lastChanged = today;
             printf("\n✔ Withdrawn successfully!\n");
             printf("Your new balance is: $%.2lf\n\n", records[accountToAmend].amount + records[accountToAmend].interest);
         }
@@ -696,7 +677,6 @@ getAccNbr:
     struct Record records[50];
     int numRecords = 0;
 
-    // Open the file in read mode
     FILE *ptr = fopen(RECORDS, "r");
     if (ptr == NULL)
     {
@@ -728,7 +708,7 @@ getAccNbr:
             recordToDelete = numRecords;
             printf("\nYou have asked to delete the following account:\n\n");
             printf("_____________________\n");
-            printf("\nAccount number: %d\nDeposit Date: %d/%d/%d \ncountry: %s \nPhone number: %d \nBalance: $%.2f \nType Of Account: %s\n",
+            printf("\nAccount number: %d\nDeposit Date: %d/%d/%d \ncountry: %s \nPhone number: %d \nBalance: $%.2lf \nType Of Account: %s\n",
                    r.accountNbr,
                    r.deposit.month,
                    r.deposit.day,
@@ -854,7 +834,7 @@ void update(struct User u)
 
     printf("\nYou have asked to update the following account:\n\n");
     printf("_____________________\n");
-    printf("\nAccount number: %d\nDeposit Date: %d/%d/%d \ncountry: %s \nPhone number: %d \nAmount deposited: $%.2f \nType Of Account: %s\n",
+    printf("\nAccount number: %d\nDeposit Date: %d/%d/%d \ncountry: %s \nPhone number: %d \nAmount deposited: $%.2lf \nType Of Account: %s\n",
            r.accountNbr,
            r.deposit.month,
            r.deposit.day,
