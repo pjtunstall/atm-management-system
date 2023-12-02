@@ -102,6 +102,23 @@ double getInterestIncrement(struct Record r, struct Date dateTo)
     return increment;
 }
 
+void printAccount(struct Record r, struct Date today)
+{
+    printf("_____________________\n");
+    printf("\nAccount number: %d\nCreated: %d/%d/%d \nCountry: %s \nPhone number: %d \nBalance on %d/%d/%d: $%.2lf \nType Of Account: %s\n",
+           r.accountNbr,
+           r.deposit.month,
+           r.deposit.day,
+           r.deposit.year,
+           r.country,
+           r.phone,
+           today.month,
+           today.day,
+           today.year,
+           r.amount + r.interest + getInterestIncrement(r, getToday()),
+           r.accountType);
+}
+
 void stayOrReturn(int notGood, void f(struct User u), struct User u)
 {
     int option;
@@ -185,7 +202,7 @@ invalid:
     }
 }
 
-void createNewAcc(struct User u)
+void createNewAccount(struct User u)
 {
     int option;
     struct Record r;
@@ -251,7 +268,7 @@ getAccountNumber:
                 goto invalid;
             }
             if (option == 1)
-                createNewAcc(u);
+                createNewAccount(u);
             else if (option == 2)
                 mainMenu(u);
             else if (option == 3)
@@ -368,6 +385,7 @@ void checkAccount(struct User u)
     int accountNbr = 0;
     int found = 0;
     double rate = 0;
+    struct Date today = getToday();
 
     FILE *pf = fopen(RECORDS, "r");
 
@@ -375,26 +393,13 @@ void checkAccount(struct User u)
     printf("\t\t====== Check Accounts =====\n\n");
     printf("\nEnter account number: ");
     scanf("%d", &accountNbr);
-    struct Date today = getToday();
 
     while (getAccountFromFile(pf, userName, &r))
     {
         if ((strcmp(userName, u.name) == 0) && (r.accountNbr == accountNbr))
         {
             found = 1;
-            printf("_____________________\n");
-            printf("\nAccount number: %d\nCreated: %d/%d/%d \nCountry: %s \nPhone number: %d \nBalance on %d/%d/%d: $%.2lf \nType Of Account: %s\n",
-                   r.accountNbr,
-                   r.deposit.month,
-                   r.deposit.day,
-                   r.deposit.year,
-                   r.country,
-                   r.phone,
-                   today.month,
-                   today.day,
-                   today.year,
-                   r.amount + r.interest + getInterestIncrement(r, getToday()),
-                   r.accountType);
+            printAccount(r, today);
             if (strcmp(r.accountType, "current") == 0)
             {
                 printf("No interest because this is a current account.\n");
@@ -461,19 +466,7 @@ void checkAllAccounts(struct User u)
         if (strcmp(userName, u.name) == 0)
         {
             found = 1;
-            printf("_____________________\n");
-            printf("\nAccount number: %d\nCreated: %d/%d/%d \nCountry: %s \nPhone number: %d \nBalance on %d/%d/%d: $%.2lf \nType Of Account: %s\n",
-                   r.accountNbr,
-                   r.deposit.month,
-                   r.deposit.day,
-                   r.deposit.year,
-                   r.country,
-                   r.phone,
-                   today.month,
-                   today.day,
-                   today.year,
-                   r.amount + r.interest + getInterestIncrement(r, getToday()),
-                   r.accountType);
+            printAccount(r, today);
         }
     }
     fclose(pf);
