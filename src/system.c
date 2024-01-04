@@ -745,7 +745,7 @@ getAccNbr:
 
     for (int i = 0; i < numRecords; i++)
     {
-        if (strcmp(r.name, u.name) != 0 || r.accountNbr != accountNbr)
+        if (strcmp(records[i].name, u.name) != 0 || records[i].accountNbr != accountNbr)
         {
             fprintf(tempPtr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s %d/%d/%d %lf\n\n",
                     records[i].id,
@@ -956,6 +956,13 @@ chooseAccount:
     printf("\nEnter the name of the user you wish to transfer the account to: ");
     scanf("%s", userName);
 
+    if (strcmp(u.name, userName) == 0)
+    {
+        printf("\n✖ You can't transfer an account to yourself, silly!\n");
+        printf("If you're not going to play sensibly, you can get out of my bank.\n");
+        exit(1);
+    }
+
     FILE *pf = fopen(RECORDS, "r");
     if (pf == NULL)
     {
@@ -989,13 +996,21 @@ chooseAccount:
         if (strcmp(records[numRecords].name, userName) == 0)
         {
             foundUser = 1;
+            if (records[numRecords].accountNbr == accountNbr)
+            {
+                printf("\n✖ They already have an account of that number!\n");
+                printf("If you're not going to play properly, get out of my bank.\n");
+                exit(1);
+            }
         }
         numRecords++;
     }
 
     if (foundAccount == 0)
     {
-        stayOrReturn(0, update, u);
+        // stayOrReturn(0, update, u);
+        printf("\n✖ Lethal error: account not found!\n");
+        return;
     }
 
     if (foundUser == 0)
