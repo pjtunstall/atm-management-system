@@ -999,6 +999,7 @@ chooseAccount:
             if (records[numRecords].accountNbr == accountNbr)
             {
                 printf("\n✖ They already have an account of that number!\n");
+                printf("How can they have two accounts of the same number, eh?\n");
                 printf("If you're not going to play properly, get out of my bank.\n");
                 exit(1);
             }
