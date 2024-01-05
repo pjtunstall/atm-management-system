@@ -17,6 +17,8 @@ For the purpose of this exercise, they've defined a phone number as an `int`. Th
 
 Apparently in this banking system, interest is simple rather than compound. That is, assuming no deposits or withdrawals are made after the acount is created, interest is only earned on the initial amount.
 
+Please note that the `records.txt` file of the database stores the total amount deposited minus withdrawals. The system calculates your balance based on this value, together with the interest rate for the account type, and the date.
+
 `Create another user named "Michel".`
 
 According to Rule 1, `users with the same name can not exist (names must be unique)`. But the given users file already contains a user called Michel. So to answer this question, you'll have to either delete Michel from `./data/users.txt` or create a user with a new name (i.e. not Michel or Alice).
