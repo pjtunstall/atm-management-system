@@ -613,17 +613,17 @@ invalid:
         goto invalid;
     }
 
-    FILE *tempPtr;
-    tempPtr = fopen("temp.txt", "w");
-    if (tempPtr == NULL)
+    FILE *res;
+    res = fopen(RECORDS, "w");
+    if (res == NULL)
     {
-        printf("✖ Error opening temporary file.\n");
+        printf("✖ Error opening file to write.\n");
         return;
     }
 
     for (int i = 0; i < numRecords; i++)
     {
-        fprintf(tempPtr, "%d %d %s %d %d/%d/%d %s %d %lf %s %d/%d/%d %lf\n\n",
+        fprintf(res, "%d %d %s %d %d/%d/%d %s %d %lf %s %d/%d/%d %lf\n\n",
                 records[i].id,
                 records[i].userId,
                 records[i].name,
@@ -641,9 +641,7 @@ invalid:
                 records[i].interest);
     }
 
-    fclose(tempPtr);
-    remove(RECORDS);
-    rename("temp.txt", RECORDS);
+    fclose(res);
     success(u);
 }
 
@@ -735,11 +733,11 @@ getAccNbr:
 
     printf("\nOk, then. On your own head be it. Deleting account...\n");
 
-    FILE *tempPtr;
-    tempPtr = fopen("temp.txt", "w");
-    if (tempPtr == NULL)
+    FILE *res;
+    res = fopen(RECORDS, "w");
+    if (res == NULL)
     {
-        printf("✖ Error opening temporary file.\n");
+        printf("✖ Error opening file to write.\n");
         return;
     }
 
@@ -747,7 +745,7 @@ getAccNbr:
     {
         if (strcmp(records[i].name, u.name) != 0 || records[i].accountNbr != accountNbr)
         {
-            fprintf(tempPtr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s %d/%d/%d %lf\n\n",
+            fprintf(res, "%d %d %s %d %d/%d/%d %s %d %.2lf %s %d/%d/%d %lf\n\n",
                     records[i].id,
                     records[i].userId,
                     records[i].name,
@@ -766,9 +764,7 @@ getAccNbr:
         }
     }
 
-    fclose(tempPtr);
-    remove(RECORDS);
-    rename("temp.txt", RECORDS);
+    fclose(res);
     printf("\n✔ Account deleted successfully!\n");
     success(u);
 }
@@ -872,11 +868,11 @@ updateOption:
 
     fclose(pf);
 
-    FILE *tempPtr;
-    tempPtr = fopen("temp.txt", "w");
-    if (tempPtr == NULL)
+    FILE *res;
+    res = fopen(RECORDS, "w");
+    if (res == NULL)
     {
-        printf("✖ Error opening temporary file.\n");
+        printf("✖ Error opening file to write.\n");
         return;
     }
 
@@ -884,7 +880,7 @@ updateOption:
     {
         if (i == accountToUpdate)
         {
-            fprintf(tempPtr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s %d/%d/%d %lf\n\n",
+            fprintf(res, "%d %d %s %d %d/%d/%d %s %d %.2lf %s %d/%d/%d %lf\n\n",
                     r.id,
                     r.userId,
                     r.name,
@@ -903,7 +899,7 @@ updateOption:
         }
         else
         {
-            fprintf(tempPtr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s %d/%d/%d %lf\n\n",
+            fprintf(res, "%d %d %s %d %d/%d/%d %s %d %.2lf %s %d/%d/%d %lf\n\n",
                     records[i].id,
                     records[i].userId,
                     records[i].name,
@@ -922,9 +918,7 @@ updateOption:
         }
     }
 
-    fclose(tempPtr);
-    remove(RECORDS);
-    rename("temp.txt", RECORDS);
+    fclose(res);
     printf("\n✔ Account updated successfully!\n");
     success(u);
 }
@@ -932,6 +926,8 @@ updateOption:
 void transfer(struct User u)
 {
     struct Record r;
+    struct User recipient;
+    struct User temp;
     int accountNbr;
     int foundAccount = 0;
     int foundUser = 0;
@@ -948,9 +944,7 @@ chooseAccount:
     if (scanf("%d", &accountNbr) != 1)
     {
         printf("\n✖ Invalid account number!\n");
-        while (getchar() != '\n')
-            ;
-        goto chooseAccount;
+        goto invalid;
     }
 
     printf("\nEnter the name of the user you wish to transfer the account to: ");
@@ -959,8 +953,7 @@ chooseAccount:
     if (strcmp(u.name, userName) == 0)
     {
         printf("\n✖ You can't transfer an account to yourself, silly!\n");
-        printf("If you're not going to play sensibly, you can get out of my bank.\n");
-        exit(1);
+        goto invalid;
     }
 
     FILE *pf = fopen(RECORDS, "r");
@@ -969,6 +962,27 @@ chooseAccount:
         printf("✖ Error opening file.\n");
         return;
     }
+
+    FILE *fp;
+    fp = fopen("./data/users.txt", "r");
+    if (fp == NULL)
+    {
+        printf("✖ Error opening file.\n");
+        exit(1);
+    }
+
+    while (fscanf(fp, "%d %s %s", &temp.id, temp.name, temp.password) == 3)
+    {
+        if (strcmp(userName, temp.name) == 0)
+        {
+            recipient.id = temp.id;
+            strcpy(recipient.name, temp.name);
+            strcpy(recipient.password, temp.password);
+            foundUser = 1;
+        }
+    }
+
+    fclose(fp);
 
     while (fscanf(pf, "%d %d %s %d %d/%d/%d %s %d %lf %s %d/%d/%d %lf\n\n",
                   &records[numRecords].id,
@@ -995,13 +1009,14 @@ chooseAccount:
         }
         if (strcmp(records[numRecords].name, userName) == 0)
         {
-            foundUser = 1;
             if (records[numRecords].accountNbr == accountNbr)
             {
                 printf("\n✖ They already have an account of that number!\n");
-                printf("How can they have two accounts of the same number, eh?\n");
-                printf("If you're not going to play properly, get out of my bank.\n");
-                exit(1);
+                printf("You can't have two accounts of the same number.\n");
+                printf("That's just not how it works.\n");
+                printf("How will they tell them apart?\n");
+                printf("Honestly!\n");
+                goto invalid;
             }
         }
         numRecords++;
@@ -1009,16 +1024,17 @@ chooseAccount:
 
     if (foundAccount == 0)
     {
-        // stayOrReturn(0, update, u);
         printf("\n✖ Lethal error: account not found!\n");
-        return;
+        goto invalid;
     }
 
     if (foundUser == 0)
     {
-        printf("\n✖ User not found!\n");
-        printf("\nEnter 1 to try again, 2 to return to main menu, or 3 to exit.\n");
+        printf("\n✖ Extremely bad error: user not found!\n");
     invalid:
+        while (getchar() != '\n')
+            ;
+        printf("\nEnter 1 to try again, 2 to return to main menu, or 3 to exit.\n");
         if (scanf("%d", &option) != 1)
         {
             printf("\n✖ Invalid operation!\n");
@@ -1027,7 +1043,11 @@ chooseAccount:
             goto invalid;
         }
         if (option == 1)
-            transfer(u);
+        {
+            while (getchar() != '\n')
+                ;
+            goto chooseAccount;
+        }
         else if (option == 2)
             mainMenu(u);
         else if (option == 3)
@@ -1045,38 +1065,12 @@ chooseAccount:
     printf("\nTransferring account %d to %s\n", r.accountNbr, userName);
 
     fclose(pf);
-
-    FILE *fp;
-    struct User temp;
-
-    struct User emptyUser;
-    emptyUser.id = -1;
-    strcpy(emptyUser.name, "");
-    strcpy(emptyUser.password, "");
-
-    fp = fopen("./data/users.txt", "r");
-    if (fp == NULL)
-    {
-        printf("✖ Error opening file.\n");
-        exit(1);
-    }
-
-    while (fscanf(fp, "%d %s %s", &temp.id, temp.name, temp.password) == 3)
-    {
-        if (strcmp(userName, temp.name) == 0)
-        {
-            foundUser = 1;
-            r.userId = temp.id;
-        }
-    }
-
     fclose(fp);
 
-    FILE *tempPtr;
-    tempPtr = fopen("temp.txt", "w");
-    if (tempPtr == NULL)
+    FILE *wf = fopen(RECORDS, "w");
+    if (wf == NULL)
     {
-        printf("✖ Error opening temporary file.\n");
+        printf("✖ Error opening file.\n");
         return;
     }
 
@@ -1084,11 +1078,11 @@ chooseAccount:
     {
         if (i == accountToTransfer)
         {
-            fprintf(tempPtr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s %d/%d/%d %lf\n\n",
+            fprintf(wf, "%d %d %s %d %d/%d/%d %s %d %.2lf %s %d/%d/%d %lf\n\n",
                     r.id,
-                    r.userId,
-                    userName,
-                    r.accountNbr,
+                    recipient.id,
+                    recipient.name,
+                    accountNbr,
                     r.deposit.month,
                     r.deposit.day,
                     r.deposit.year,
@@ -1103,7 +1097,7 @@ chooseAccount:
         }
         else
         {
-            fprintf(tempPtr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s %d/%d/%d %lf\n\n",
+            fprintf(wf, "%d %d %s %d %d/%d/%d %s %d %.2lf %s %d/%d/%d %lf\n\n",
                     records[i].id,
                     records[i].userId,
                     records[i].name,
@@ -1122,9 +1116,7 @@ chooseAccount:
         }
     }
 
-    fclose(tempPtr);
-    remove(RECORDS);
-    rename("temp.txt", RECORDS);
+    fclose(wf);
     printf("\n✔ Account transferred successfully!\n");
     success(u);
 }

@@ -17,7 +17,7 @@ For the purpose of this exercise, they've defined a phone number as an `int`. Th
 
 Apparently in this banking system, interest is simple rather than compound. That is, assuming no deposits or withdrawals are made after the acount is created, interest is only earned on the initial amount.
 
-Please note that the `records.txt` file of the database stores the total amount deposited minus withdrawals. The system calculates your balance based on this value, together with the interest rate for the account type, and the date.
+Please note that the `records.txt` file of the database stores the total amount deposited minus withdrawals. The system calculates your balance based on this value, together with the interest rate for the account type, and the date. The final column is interest accrued at the time of the last transaction.
 
 `Create another user named "Michel".`
 
